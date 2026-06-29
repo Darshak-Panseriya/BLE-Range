@@ -50,12 +50,22 @@ export class BluetoothManager {
     return this.deviceName;
   }
 
+  // Wraps gatt.connect() with a timeout so it never hangs indefinitely.
+  // Rejects with an Error if the device doesn't respond within timeoutMs.
+  _connectWithTimeout(timeoutMs = 15000) {
+    const connectPromise = this._device.gatt.connect();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('connect timeout')), timeoutMs)
+    );
+    return Promise.race([connectPromise, timeoutPromise]);
+  }
+
   async connect() {
     if (!this._device) throw new Error('No device selected');
     this._wantConnected = true;
     this._setState('connecting');
     try {
-      this._server = await this._device.gatt.connect();
+      this._server = await this._connectWithTimeout();
       this._setState('connected');
       if (this._onEvent) this._onEvent('ble_event', 'connected');
       this._startAdvertisementWatch();
@@ -88,8 +98,9 @@ export class BluetoothManager {
     this._reconnectTimer = setTimeout(async () => {
       if (!this._wantConnected || !this._device) return;
       try {
-        this._setState('connecting');
-        this._server = await this._device.gatt.connect();
+        // Reconnect silently in the background — state stays 'disconnected'
+        // until it actually succeeds.  Only then fire the connected event.
+        this._server = await this._connectWithTimeout();
         this._setState('connected');
         if (this._onEvent) this._onEvent('ble_event', 'connected');
         this._startAdvertisementWatch();

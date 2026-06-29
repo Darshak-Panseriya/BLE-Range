@@ -85,7 +85,7 @@ export class SessionLogger {
     try {
       const file = new File([blob], name, { type: 'text/csv' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: name });
+        await navigator.share({ files: [file] });
         return;
       }
     } catch {
