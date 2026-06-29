@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="BLE Range Logger">
+  <rect width="192" height="192" rx="40" fill="#0b1020" />
+  <circle cx="96" cy="74" r="46" fill="none" stroke="#4da3ff" stroke-width="9" />
+  <path
+    d="M96 116 C96 116 58 148 96 182 C134 148 96 116 96 116 Z"
+    fill="#4da3ff"
+  />
+  <path
+    d="M84 50 L108 68 L92 80 L92 44 L108 56 L84 74"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>

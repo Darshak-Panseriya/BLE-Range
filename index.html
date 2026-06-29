@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>BLE Range Logger</title>
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="BLE Range" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>BLE Range Logger</h1>
+        <p class="subtitle">Bluetooth + GPS logging &middot; CSV export</p>
+      </header>
+
+      <div id="compat-banner" class="banner" hidden></div>
+
+      <section class="card device-card">
+        <div class="row">
+          <div>
+            <div class="label">Device</div>
+            <div id="device-name" class="value">— none selected —</div>
+          </div>
+          <button id="btn-select" class="btn btn-secondary">
+            Select BLE Device
+          </button>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <div class="card stat">
+          <div class="label">BLE state</div>
+          <div id="ble-state" class="value state-disconnected">disconnected</div>
+        </div>
+        <div class="card stat">
+          <div class="label">RSSI</div>
+          <div id="rssi" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Latitude</div>
+          <div id="lat" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Longitude</div>
+          <div id="lon" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">GPS accuracy</div>
+          <div id="acc" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Altitude</div>
+          <div id="alt" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Speed</div>
+          <div id="speed" class="value">—</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Rows logged</div>
+          <div id="row-count" class="value">0</div>
+        </div>
+      </section>
+
+      <section class="card controls">
+        <div class="control-row">
+          <label class="control" for="input-interval">
+            <span class="label">Snapshot interval (s)</span>
+            <input
+              id="input-interval"
+              type="number"
+              min="0.2"
+              step="0.5"
+              value="1"
+              inputmode="decimal"
+            />
+          </label>
+
+          <label class="control toggle" for="toggle-gps-source">
+            <span class="label">GPS source</span>
+            <span class="toggle-wrap">
+              <input id="toggle-gps-source" type="checkbox" />
+              <span id="gps-source-label" class="toggle-label">internal</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="btn-start" class="btn btn-primary">Start</button>
+          <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
+          <button id="btn-export" class="btn btn-secondary" disabled>
+            Export CSV
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="label">Recent rows</div>
+        <pre id="log-preview" class="log-preview">No rows yet.</pre>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Keep this screen on during a run — web pages on iPhone stop logging in
+          the background. Reliable RSSI and background logging come with the
+          native app.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "BLE Range Logger",
+  "short_name": "BLE Range",
+  "description": "Log BLE connection state, RSSI and GPS coordinates with accuracy, then export CSV.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
