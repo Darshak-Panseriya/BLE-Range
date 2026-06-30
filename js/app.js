@@ -59,6 +59,13 @@ function refreshStatus() {
   $('acc').textContent = g.accuracy === '' ? '—' : `${fmt(g.accuracy, 1)} m`;
   $('alt').textContent = g.altitude === '' ? '—' : `${fmt(g.altitude, 1)} m`;
   $('speed').textContent = g.speed === '' ? '—' : `${fmt(g.speed, 1)} m/s`;
+  const h = compass.latest();
+  $('heading').textContent =
+    h.heading === '' ? '—' : `${fmt(h.heading, 0)}° ${CompassManager.cardinal(h.heading)}`;
+  $('tilt').textContent =
+    h.beta === '' && h.gamma === ''
+      ? '—'
+      : `p ${fmt(h.beta, 0)}° / r ${fmt(h.gamma, 0)}°`;
   $('row-count').textContent = String(logger.rowCount);
   updateButtons();
 }
@@ -187,6 +194,7 @@ async function stopSession() {
     snapshotTimer = null;
   }
   geo.stop();
+  compass.stop();
   logger.stop();
   await releaseWakeLock();
   $('rec-badge').textContent = 'idle';
