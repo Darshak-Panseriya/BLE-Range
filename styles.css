@@ -481,3 +481,24 @@ input[type="checkbox"] {
 #ref-needle.off-track .ref-needle-dot {
   fill: var(--amber);
 }
+
+.ref-uncertainty {
+  fill: rgba(251, 189, 35, 0.18);
+  stroke: none;
+}
+
+.ref-conf {
+  font-weight: 600;
+}
+
+.ref-conf.conf-high {
+  color: var(--green);
+}
+
+.ref-conf.conf-med {
+  color: var(--amber);
+}
+
+.ref-conf.conf-low {
+  color: var(--red);
+}

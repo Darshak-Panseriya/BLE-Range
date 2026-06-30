@@ -22,7 +22,8 @@ const CSV_HEADER = [
   'orientation_beta_deg',
   'orientation_gamma_deg',
   'ref_relative_angle_deg',
-  'ref_distance_m'
+  'ref_distance_m',
+  'ref_angle_accuracy_deg'
 ];
 
 export class SessionLogger {
@@ -72,7 +73,8 @@ export class SessionLogger {
       orientation_beta_deg: blank(c.beta),
       orientation_gamma_deg: blank(c.gamma),
       ref_relative_angle_deg: blank(r.relAngle),
-      ref_distance_m: blank(r.distance)
+      ref_distance_m: blank(r.distance),
+      ref_angle_accuracy_deg: blank(r.uncertainty)
     });
   }
 

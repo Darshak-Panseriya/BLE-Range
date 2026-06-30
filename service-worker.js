@@ -3,7 +3,7 @@
 // Network-first would risk stale failures offline; we use cache-first for the
 // small, versioned shell and fall back to the network for anything else.
 
-const CACHE = 'ble-range-v4';
+const CACHE = 'ble-range-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -8,9 +8,10 @@
 
 export class ReferenceManager {
   constructor() {
-    this.center = null; // { lat, lon }
-    this.refPoint = null; // { lat, lon }
+    this.center = null; // { lat, lon, acc }
+    this.refPoint = null; // { lat, lon, acc }
     this.refBearing = null; // degrees from center to refPoint (0..360)
+    this.refDistance = null; // meters from center to refPoint (baseline length)
   }
 
   // Accepts a geo snapshot ({ latitude, longitude, ... }); returns true if stored.
@@ -34,6 +35,7 @@ export class ReferenceManager {
     this.center = null;
     this.refPoint = null;
     this.refBearing = null;
+    this.refDistance = null;
   }
 
   get ready() {
@@ -41,13 +43,18 @@ export class ReferenceManager {
   }
 
   _recompute() {
-    this.refBearing =
-      this.center && this.refPoint
-        ? ReferenceManager.bearing(this.center, this.refPoint)
-        : null;
+    if (this.center && this.refPoint) {
+      this.refBearing = ReferenceManager.bearing(this.center, this.refPoint);
+      this.refDistance = ReferenceManager.distance(this.center, this.refPoint);
+    } else {
+      this.refBearing = null;
+      this.refDistance = null;
+    }
   }
 
-  // Returns { relAngle, distance, bearing } or null if not ready / no fix.
+  // Returns { relAngle, distance, bearing, uncertainty } or null if not ready.
+  // `uncertainty` is the 1-sigma angular accuracy in degrees (null if any GPS
+  // accuracy is unknown).
   compute(geo) {
     const cur = ReferenceManager._point(geo);
     if (!this.ready || !cur) return null;
@@ -55,7 +62,27 @@ export class ReferenceManager {
     const bearing = ReferenceManager.bearing(this.center, cur);
     // Normalize to -180..180; positive = clockwise (right) of reference line.
     const relAngle = ((bearing - this.refBearing + 540) % 360) - 180;
-    return { relAngle, distance, bearing };
+    const uncertainty = this._uncertaintyDeg(cur, distance);
+    return { relAngle, distance, bearing, uncertainty };
+  }
+
+  // Angular accuracy (1-sigma, degrees) of the relative angle.
+  //
+  // A bearing from the center to a point at distance d, when each end has GPS
+  // position scatter sigma, has direction uncertainty ~ atan(sigma_combined / d).
+  // The relative angle uses two bearings (to the current point and along the 0-deg
+  // line), so their uncertainties combine in quadrature. Longer baselines => the
+  // same GPS scatter spans a smaller angle => sharper, more confident readings.
+  _uncertaintyDeg(cur, distCur) {
+    const sC = this.center.acc;
+    const sR = this.refPoint.acc;
+    const sP = cur.acc;
+    if (sC == null || sR == null || sP == null) return null;
+    if (!(distCur > 0) || !(this.refDistance > 0)) return 90;
+    const DEG = 180 / Math.PI;
+    const sCur = Math.atan2(Math.hypot(sC, sP), distCur); // dir to current point
+    const sRef = Math.atan2(Math.hypot(sC, sR), this.refDistance); // dir of 0-deg line
+    return Math.min(90, Math.hypot(sCur, sRef) * DEG);
   }
 
   static _point(geo) {
@@ -64,7 +91,12 @@ export class ReferenceManager {
     const lon = geo.longitude;
     if (lat === '' || lon === '' || lat == null || lon == null) return null;
     if (Number.isNaN(Number(lat)) || Number.isNaN(Number(lon))) return null;
-    return { lat: Number(lat), lon: Number(lon) };
+    const acc = Number(geo.accuracy);
+    return {
+      lat: Number(lat),
+      lon: Number(lon),
+      acc: Number.isFinite(acc) && acc > 0 ? acc : null
+    };
   }
 
   // Initial bearing from a to b, degrees 0..360 (0 = north, 90 = east).

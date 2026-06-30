@@ -92,26 +92,35 @@ function getTolerance() {
   return isFinite(v) && v >= 1 ? v : 5;
 }
 
-// Draw the green "on-track" wedge (±tolerance around the 0° line, pointing up).
-function updateZone() {
-  const tol = getTolerance();
-  const r = 68;
+// Build an SVG wedge path centered on centerDeg, spanning ±halfDeg, at radius.
+// 0° points up (negative Y); positive angle is clockwise (to the right).
+function wedgePath(centerDeg, halfDeg, radius) {
   const cx = 80;
   const cy = 80;
-  const a1 = (-tol * Math.PI) / 180;
-  const a2 = (tol * Math.PI) / 180;
-  const x1 = cx + r * Math.sin(a1);
-  const y1 = cy - r * Math.cos(a1);
-  const x2 = cx + r * Math.sin(a2);
-  const y2 = cy - r * Math.cos(a2);
-  const largeArc = tol > 180 ? 1 : 0;
-  $('ref-zone').setAttribute(
-    'd',
-    `M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`
-  );
+  const a1 = ((centerDeg - halfDeg) * Math.PI) / 180;
+  const a2 = ((centerDeg + halfDeg) * Math.PI) / 180;
+  const x1 = cx + radius * Math.sin(a1);
+  const y1 = cy - radius * Math.cos(a1);
+  const x2 = cx + radius * Math.sin(a2);
+  const y2 = cy - radius * Math.cos(a2);
+  const largeArc = halfDeg * 2 > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${radius} ${radius} 0 ${largeArc} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`;
 }
 
-// Update the reference circular map and numeric angle/distance.
+// Draw the green "on-track" wedge (±tolerance around the 0° line).
+function updateZone() {
+  $('ref-zone').setAttribute('d', wedgePath(0, getTolerance(), 68));
+}
+
+// Map angular uncertainty (deg) to a confidence label + colour class.
+function confidence(u) {
+  if (u == null) return { text: 'angle accuracy: waiting for GPS', cls: '' };
+  if (u <= 3) return { text: `± ${u.toFixed(1)}° · high confidence`, cls: 'conf-high' };
+  if (u <= 10) return { text: `± ${u.toFixed(1)}° · medium confidence`, cls: 'conf-med' };
+  return { text: `± ${u.toFixed(1)}° · low — move further from center`, cls: 'conf-low' };
+}
+
+// Update the reference circular map and numeric angle/distance/accuracy.
 function renderReference() {
   const badge = $('ref-badge');
   if (!ref.center) {
@@ -128,6 +137,9 @@ function renderReference() {
   if (!data) {
     $('ref-angle-val').textContent = '—';
     $('ref-dist-val').textContent = '—';
+    $('ref-conf').textContent = 'angle accuracy: —';
+    $('ref-conf').className = 'viz-cap ref-conf';
+    $('ref-uncertainty').setAttribute('d', '');
     return;
   }
   const tol = getTolerance();
@@ -139,6 +151,19 @@ function renderReference() {
   const sign = data.relAngle > 0 ? '+' : '';
   $('ref-angle-val').textContent = `${sign}${fmt(data.relAngle, 0)}°`;
   $('ref-dist-val').textContent = `${fmt(data.distance, 1)} m`;
+
+  // Angular-uncertainty fan around the needle + confidence text.
+  if (data.uncertainty != null) {
+    $('ref-uncertainty').setAttribute(
+      'd',
+      wedgePath(data.relAngle, Math.min(90, data.uncertainty), 62)
+    );
+  } else {
+    $('ref-uncertainty').setAttribute('d', '');
+  }
+  const c = confidence(data.uncertainty);
+  $('ref-conf').textContent = c.text;
+  $('ref-conf').className = 'viz-cap ref-conf ' + c.cls;
 }
 
 function appendPreview() {

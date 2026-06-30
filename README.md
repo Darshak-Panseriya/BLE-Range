@@ -133,7 +133,8 @@ Bluetooth exposes.
 timestamp_iso, event_type, ble_state, rssi_dbm, latitude, longitude,
 horizontal_accuracy_m, altitude_m, vertical_accuracy_m, speed_mps, gps_source,
 compass_heading_deg, compass_accuracy_deg, orientation_alpha_deg,
-orientation_beta_deg, orientation_gamma_deg
+orientation_beta_deg, orientation_gamma_deg, ref_relative_angle_deg,
+ref_distance_m, ref_angle_accuracy_deg
 ```
 
 - `event_type`: `session_start`, `snapshot`, `ble_event`, `session_end`
@@ -141,6 +142,10 @@ orientation_beta_deg, orientation_gamma_deg
 - `compass_heading_deg`: absolute magnetic heading (0 = N, 90 = E), iOS only.
 - `orientation_beta_deg`: pitch (front/back tilt). `orientation_gamma_deg`: roll
   (left/right tilt). `orientation_alpha_deg`: yaw (relative to app start on iOS).
+- `ref_relative_angle_deg`: angle off the user's 0° reference line (+ = clockwise).
+  `ref_distance_m`: distance from the center point. `ref_angle_accuracy_deg`:
+  1-sigma angular accuracy, derived from GPS accuracy and distance (smaller is
+  better; improves with a longer baseline).
 - Empty cells mean the value was unavailable (e.g. RSSI on iOS, GPS before the
   first fix, or orientation before Motion permission is granted).
 - Timestamps are ISO-8601 UTC with milliseconds.
