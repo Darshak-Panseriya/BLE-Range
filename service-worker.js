@@ -3,7 +3,7 @@
 // Network-first would risk stale failures offline; we use cache-first for the
 // small, versioned shell and fall back to the network for anything else.
 
-const CACHE = 'ble-range-v1';
+const CACHE = 'ble-range-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,8 @@ const ASSETS = [
   './js/app.js',
   './js/geo.js',
   './js/ble.js',
-  './js/logger.js'
+  './js/logger.js',
+  './js/compass.js'
 ];
 
 self.addEventListener('install', (event) => {

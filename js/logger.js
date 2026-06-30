@@ -15,7 +15,12 @@ const CSV_HEADER = [
   'altitude_m',
   'vertical_accuracy_m',
   'speed_mps',
-  'gps_source'
+  'gps_source',
+  'compass_heading_deg',
+  'compass_accuracy_deg',
+  'orientation_alpha_deg',
+  'orientation_beta_deg',
+  'orientation_gamma_deg'
 ];
 
 export class SessionLogger {
@@ -41,21 +46,28 @@ export class SessionLogger {
     this.running = false;
   }
 
-  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource }
-  add({ eventType, bleState, rssi, geo, gpsSource }) {
+  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource, compass: {heading,...} }
+  add({ eventType, bleState, rssi, geo, gpsSource, compass }) {
     const g = geo || {};
+    const c = compass || {};
+    const blank = (v) => (v === '' || v === null || v === undefined ? '' : v);
     this._rows.push({
       timestamp_iso: new Date().toISOString(),
       event_type: eventType,
       ble_state: bleState ?? '',
-      rssi_dbm: rssi === '' || rssi === null || rssi === undefined ? '' : rssi,
+      rssi_dbm: blank(rssi),
       latitude: g.latitude ?? '',
       longitude: g.longitude ?? '',
       horizontal_accuracy_m: g.accuracy ?? '',
       altitude_m: g.altitude ?? '',
       vertical_accuracy_m: g.altitudeAccuracy ?? '',
       speed_mps: g.speed ?? '',
-      gps_source: gpsSource ?? 'internal'
+      gps_source: gpsSource ?? 'internal',
+      compass_heading_deg: blank(c.heading),
+      compass_accuracy_deg: blank(c.accuracy),
+      orientation_alpha_deg: blank(c.alpha),
+      orientation_beta_deg: blank(c.beta),
+      orientation_gamma_deg: blank(c.gamma)
     });
   }
 
@@ -85,7 +97,7 @@ export class SessionLogger {
     try {
       const file = new File([blob], name, { type: 'text/csv' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: name });
+        await navigator.share({ files: [file] });
         return;
       }
     } catch {

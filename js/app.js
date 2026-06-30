@@ -7,15 +7,18 @@
 import { GeolocationManager } from './geo.js';
 import { BluetoothManager } from './ble.js';
 import { SessionLogger } from './logger.js';
+import { CompassManager } from './compass.js';
 
 const geo = new GeolocationManager();
 const ble = new BluetoothManager();
 const logger = new SessionLogger();
+const compass = new CompassManager();
 
 let snapshotTimer = null;
 let wakeLock = null;
 let gpsSource = 'internal';
 let sessionActive = false;
+let motionEnabled = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,11 +43,17 @@ function showBanner(msg, kind) {
 
 function refreshStatus() {
   const g = geo.latest();
-  const stateEl = $('ble-state');
-  stateEl.textContent = ble.state;
-  stateEl.className = 'value state-' + ble.state;
+  $('ble-state').textContent = ble.state;
+  $('ble-state').className = 'value state-' + ble.state;
+  const badge = $('ble-badge');
+  badge.textContent = ble.state;
+  badge.className = 'badge badge-' + ble.state;
   $('device-name').textContent = ble.deviceName || '— none selected —';
   $('rssi').textContent = ble.rssi === '' ? '—' : `${ble.rssi} dBm`;
+  if (ble.note) {
+    $('ble-note').textContent = ble.note;
+    $('ble-note').classList.add('note-warn');
+  }
   $('lat').textContent = fmt(g.latitude, 6);
   $('lon').textContent = fmt(g.longitude, 6);
   $('acc').textContent = g.accuracy === '' ? '—' : `${fmt(g.accuracy, 1)} m`;
@@ -54,13 +63,34 @@ function refreshStatus() {
   updateButtons();
 }
 
+// Update the compass needle + attitude indicator + numeric orientation values.
+function renderOrientation(o) {
+  const h = o || compass.latest();
+  // Compass needle points toward the heading (clockwise from north/up).
+  if (h.heading !== '') {
+    $('compass-needle').setAttribute('transform', `rotate(${h.heading} 70 70)`);
+    $('heading-val').textContent = `${fmt(h.heading, 0)}° ${CompassManager.cardinal(h.heading)}`;
+  }
+  // Attitude: horizon shifts with pitch (beta) and banks with roll (gamma).
+  if (h.beta !== '' || h.gamma !== '') {
+    const pitchPx = Math.max(-55, Math.min(55, (h.beta || 0) * 1.4));
+    const roll = h.gamma || 0;
+    $('attitude-horizon').setAttribute(
+      'transform',
+      `rotate(${roll} 70 70) translate(0 ${pitchPx})`
+    );
+    $('pitch-val').textContent = `${fmt(h.beta, 0)}°`;
+    $('roll-val').textContent = `${fmt(h.gamma, 0)}°`;
+  }
+}
+
 function appendPreview() {
   const last = logger.rows.slice(-8).reverse();
   const lines = last.map((r) => {
     const t = (r.timestamp_iso.split('T')[1] || '').replace('Z', '');
     return `${t}  ${r.event_type}  ${r.ble_state || '-'}  rssi=${
       r.rssi_dbm || '-'
-    }  acc=${r.horizontal_accuracy_m || '-'}`;
+    }  hdg=${r.compass_heading_deg !== '' ? Math.round(r.compass_heading_deg) : '-'}`;
   });
   $('log-preview').textContent = lines.join('\n') || 'No rows yet.';
 }
@@ -71,7 +101,8 @@ function logRow(eventType) {
     bleState: ble.state,
     rssi: ble.rssi,
     geo: geo.latest(),
-    gpsSource
+    gpsSource,
+    compass: compass.latest()
   });
   refreshStatus();
   appendPreview();
@@ -80,6 +111,27 @@ function logRow(eventType) {
 function getSnapshotIntervalMs() {
   const v = parseFloat($('input-interval').value);
   return (isFinite(v) && v >= 0.2 ? v : 1) * 1000;
+}
+
+// Request motion/orientation permission (iOS needs a user gesture) and start
+// live compass updates. Safe to call multiple times.
+async function ensureMotion() {
+  if (motionEnabled) return true;
+  try {
+    const granted = await compass.requestPermission();
+    if (!granted) {
+      showBanner('Motion & Orientation permission was denied — heading/tilt will be blank.', 'warn');
+      return false;
+    }
+  } catch {
+    // Some platforms throw if not in a user gesture; ignore and try to start.
+  }
+  compass.setOnChange(renderOrientation);
+  compass.start();
+  motionEnabled = true;
+  $('btn-motion').textContent = 'On';
+  $('btn-motion').disabled = true;
+  return true;
 }
 
 async function acquireWakeLock() {
@@ -115,11 +167,14 @@ async function startSession() {
     onError: (e) =>
       showBanner('GPS error: ' + (e && e.message ? e.message : e), 'warn')
   });
+  await ensureMotion();
   logRow('session_start');
   snapshotTimer = setInterval(() => {
     if (sessionActive) logRow('snapshot');
   }, getSnapshotIntervalMs());
   await acquireWakeLock();
+  $('rec-badge').textContent = 'recording';
+  $('rec-badge').className = 'badge badge-connected';
   updateButtons();
 }
 
@@ -134,6 +189,8 @@ async function stopSession() {
   geo.stop();
   logger.stop();
   await releaseWakeLock();
+  $('rec-badge').textContent = 'idle';
+  $('rec-badge').className = 'badge';
   updateButtons();
 }
 
@@ -153,14 +210,17 @@ ble.setHandlers({
 });
 
 $('btn-select').addEventListener('click', async () => {
+  await ensureMotion(); // piggyback the gesture to enable orientation early
   try {
     await ble.selectDevice();
     await ble.connect();
     refreshStatus();
   } catch (e) {
+    refreshStatus(); // surfaces ble.note diagnostics
     showBanner('Bluetooth: ' + (e && e.message ? e.message : e), 'warn');
   }
 });
+$('btn-motion').addEventListener('click', ensureMotion);
 $('btn-start').addEventListener('click', startSession);
 $('btn-stop').addEventListener('click', stopSession);
 $('btn-export').addEventListener('click', () => logger.export());

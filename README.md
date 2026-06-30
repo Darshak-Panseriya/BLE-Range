@@ -79,6 +79,32 @@ Bluetooth to iOS:
 2. Open Bluefy and navigate to your GitHub Pages URL.
 3. Tap **Select BLE Device**, pick your device, and it connects.
 
+### Which BLE devices work (and which don't)
+
+This app speaks **Bluetooth Low Energy (BLE / GATT)** only. That is what Web
+Bluetooth exposes.
+
+**Will NOT work:**
+
+- **Headphones, earbuds, speakers, car kits.** These use *Classic Bluetooth
+  audio* (A2DP/HFP), a different protocol. iOS shows them as "connected" with a
+  volume HUD, but Web Bluetooth cannot see or track that link. The app will show
+  `connecting` then drop to `disconnected`, and display a note explaining this.
+
+**Will work (use one of these for range testing):**
+
+- A **BLE sensor / beacon / tag** (e.g. iBeacon/Eddystone tag, Tile-style
+  tracker, BLE temperature or heart-rate sensor).
+- A **dev board** advertising as a BLE peripheral: **ESP32**, **nRF52**
+  (Nordic), Arduino with BLE, Raspberry Pi Pico W.
+- **A second phone** running a free "BLE peripheral / advertiser" app:
+  - Android: **nRF Connect** (Nordic) -> Advertiser, or **BLE Peripheral Simulator**.
+  - The peripheral must expose a connectable **GATT server** so this app can open
+    a connection and track connect/disconnect.
+
+> Tip: if you only need to confirm the app works, an ESP32 flashed with a basic
+> BLE "server" example is the cheapest reliable test target.
+
 ### Add to Home Screen (optional, makes it feel like an app)
 
 - In Safari: **Share -> Add to Home Screen**. Launches full-screen.
@@ -105,13 +131,18 @@ Bluetooth to iOS:
 
 ```
 timestamp_iso, event_type, ble_state, rssi_dbm, latitude, longitude,
-horizontal_accuracy_m, altitude_m, vertical_accuracy_m, speed_mps, gps_source
+horizontal_accuracy_m, altitude_m, vertical_accuracy_m, speed_mps, gps_source,
+compass_heading_deg, compass_accuracy_deg, orientation_alpha_deg,
+orientation_beta_deg, orientation_gamma_deg
 ```
 
 - `event_type`: `session_start`, `snapshot`, `ble_event`, `session_end`
 - `ble_state`: `connected`, `connecting`, `disconnected`
-- Empty cells mean the value was unavailable (e.g. RSSI on iOS, or GPS before the
-  first fix).
+- `compass_heading_deg`: absolute magnetic heading (0 = N, 90 = E), iOS only.
+- `orientation_beta_deg`: pitch (front/back tilt). `orientation_gamma_deg`: roll
+  (left/right tilt). `orientation_alpha_deg`: yaw (relative to app start on iOS).
+- Empty cells mean the value was unavailable (e.g. RSSI on iOS, GPS before the
+  first fix, or orientation before Motion permission is granted).
 - Timestamps are ISO-8601 UTC with milliseconds.
 
 ---
@@ -136,6 +167,9 @@ records which source was used, and watch `horizontal_accuracy_m` drop.
   a long value or Never during a run. The in-app Wake Lock helps but Auto-Lock can
   override it.
 - **"Select BLE Device" is greyed out:** you are in Safari. Use Bluefy for BLE.
+- **State stays `connecting`, or connects then immediately disconnects:** the
+  device is almost certainly Classic-Bluetooth audio (headphones/speaker). Those
+  cannot be tracked — use a real BLE peripheral (see "Which BLE devices work").
 - **No location values:** grant location permission; go outdoors for a first fix.
 - **RSSI stays blank:** expected on iOS — the web platform does not expose it
   reliably. Use the native app for RSSI.
@@ -153,6 +187,7 @@ records which source was used, and watch `horizontal_accuracy_m` drop.
 | `js/app.js` | Orchestration, session control, Wake Lock, service-worker registration |
 | `js/geo.js` | Geolocation wrapper |
 | `js/ble.js` | Web Bluetooth wrapper |
+| `js/compass.js` | Compass heading + device orientation (gyro angles) |
 | `js/logger.js` | CSV row building and export |
 | `manifest.webmanifest` | PWA metadata |
 | `service-worker.js` | Offline app-shell cache |

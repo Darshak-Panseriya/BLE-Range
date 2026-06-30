@@ -17,11 +17,13 @@ export class BluetoothManager {
     this.state = 'disconnected'; // 'disconnected' | 'connecting' | 'connected'
     this.deviceName = '';
     this.rssi = ''; // latest advertisement RSSI (best-effort) or ''
+    this.note = ''; // human-readable diagnostic for the UI
     this._onStateChange = null;
     this._onEvent = null;
     this._reconnectTimer = null;
     this._wantConnected = false;
     this._advWatching = false;
+    this._connectedAt = 0;
   }
 
   setHandlers({ onStateChange, onEvent } = {}) {
@@ -50,16 +52,31 @@ export class BluetoothManager {
     return this.deviceName;
   }
 
+  // Wraps gatt.connect() with a timeout so it never hangs indefinitely.
+  _connectWithTimeout(timeoutMs = 12000) {
+    const connectPromise = this._device.gatt.connect();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('connect timeout')), timeoutMs)
+    );
+    return Promise.race([connectPromise, timeoutPromise]);
+  }
+
   async connect() {
     if (!this._device) throw new Error('No device selected');
     this._wantConnected = true;
+    this.note = '';
     this._setState('connecting');
     try {
-      this._server = await this._device.gatt.connect();
+      this._server = await this._connectWithTimeout();
+      this._connectedAt = Date.now();
       this._setState('connected');
       if (this._onEvent) this._onEvent('ble_event', 'connected');
       this._startAdvertisementWatch();
     } catch (e) {
+      this.note =
+        'Could not open a BLE (GATT) connection. Audio devices like ' +
+        'headphones/speakers use Classic Bluetooth and cannot be tracked here — ' +
+        'use a BLE peripheral (sensor, beacon, tag, ESP32/nRF).';
       this._setState('disconnected');
       this._scheduleReconnect();
       throw e;
@@ -77,6 +94,14 @@ export class BluetoothManager {
   }
 
   _handleDisconnect() {
+    // If the link dropped within ~2 s of connecting, it is almost certainly an
+    // audio/Classic-Bluetooth device that does not keep a connectable GATT link.
+    if (this._connectedAt && Date.now() - this._connectedAt < 2000) {
+      this.note =
+        'Device connected then dropped immediately — typical of headphones/' +
+        'speakers (Classic Bluetooth audio). Use a BLE peripheral for range testing.';
+    }
+    this._connectedAt = 0;
     this._setState('disconnected');
     if (this._onEvent) this._onEvent('ble_event', 'disconnected');
     if (this._wantConnected) this._scheduleReconnect();
@@ -88,8 +113,10 @@ export class BluetoothManager {
     this._reconnectTimer = setTimeout(async () => {
       if (!this._wantConnected || !this._device) return;
       try {
-        this._setState('connecting');
-        this._server = await this._device.gatt.connect();
+        // Reconnect silently in the background — state stays 'disconnected'
+        // until it actually succeeds, so events stay clean.
+        this._server = await this._connectWithTimeout();
+        this._connectedAt = Date.now();
         this._setState('connected');
         if (this._onEvent) this._onEvent('ble_event', 'connected');
         this._startAdvertisementWatch();

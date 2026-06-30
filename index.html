@@ -28,54 +28,46 @@
 
       <div id="compat-banner" class="banner" hidden></div>
 
-      <section class="card device-card">
+      <!-- Step 1 — Bluetooth -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step">1</span>
+          <h2 class="section-title">Bluetooth (BLE)</h2>
+          <span id="ble-badge" class="badge badge-disconnected">disconnected</span>
+        </div>
         <div class="row">
           <div>
             <div class="label">Device</div>
             <div id="device-name" class="value">— none selected —</div>
           </div>
           <button id="btn-select" class="btn btn-secondary">
-            Select BLE Device
+            Select &amp; Connect
           </button>
         </div>
+        <div class="stat-pair">
+          <div>
+            <div class="label">RSSI (signal)</div>
+            <div id="rssi" class="value">—</div>
+          </div>
+          <div>
+            <div class="label">State</div>
+            <div id="ble-state" class="value state-disconnected">disconnected</div>
+          </div>
+        </div>
+        <p id="ble-note" class="note">
+          Connect a <strong>BLE peripheral</strong> (sensor, beacon, tag, ESP32 /
+          nRF, fitness strap). <strong>Headphones and speakers will not work</strong>
+          — they use Classic Bluetooth audio, which Web Bluetooth cannot track.
+        </p>
       </section>
 
-      <section class="status-grid">
-        <div class="card stat">
-          <div class="label">BLE state</div>
-          <div id="ble-state" class="value state-disconnected">disconnected</div>
+      <!-- Step 2 — Recording -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step">2</span>
+          <h2 class="section-title">Recording</h2>
+          <span id="rec-badge" class="badge">idle</span>
         </div>
-        <div class="card stat">
-          <div class="label">RSSI</div>
-          <div id="rssi" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Latitude</div>
-          <div id="lat" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Longitude</div>
-          <div id="lon" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">GPS accuracy</div>
-          <div id="acc" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Altitude</div>
-          <div id="alt" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Speed</div>
-          <div id="speed" class="value">—</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Rows logged</div>
-          <div id="row-count" class="value">0</div>
-        </div>
-      </section>
-
-      <section class="card controls">
         <div class="control-row">
           <label class="control" for="input-interval">
             <span class="label">Snapshot interval (s)</span>
@@ -88,16 +80,11 @@
               inputmode="decimal"
             />
           </label>
-
-          <label class="control toggle" for="toggle-gps-source">
-            <span class="label">GPS source</span>
-            <span class="toggle-wrap">
-              <input id="toggle-gps-source" type="checkbox" />
-              <span id="gps-source-label" class="toggle-label">internal</span>
-            </span>
-          </label>
+          <div class="control">
+            <span class="label">Rows logged</span>
+            <div id="row-count" class="value">0</div>
+          </div>
         </div>
-
         <div class="button-row">
           <button id="btn-start" class="btn btn-primary">Start</button>
           <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
@@ -105,6 +92,114 @@
             Export CSV
           </button>
         </div>
+        <p class="note">
+          Workflow: <strong>connect BLE first</strong>, then tap
+          <strong>Start</strong>. Walk the range — connect / disconnect events are
+          timestamped automatically. Keep the screen on.
+        </p>
+      </section>
+
+      <!-- Location (GPS) -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="icon-dot gps"></span>
+          <h2 class="section-title">Location (GPS)</h2>
+        </div>
+        <div class="status-grid">
+          <div class="stat">
+            <div class="label">Latitude</div>
+            <div id="lat" class="value">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Longitude</div>
+            <div id="lon" class="value">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">GPS accuracy</div>
+            <div id="acc" class="value">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Altitude</div>
+            <div id="alt" class="value">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Speed</div>
+            <div id="speed" class="value">—</div>
+          </div>
+          <label class="stat toggle" for="toggle-gps-source">
+            <span class="label">GPS source</span>
+            <span class="toggle-wrap">
+              <input id="toggle-gps-source" type="checkbox" />
+              <span id="gps-source-label" class="toggle-label">internal</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Orientation (Compass + Gyro) -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="icon-dot gyro"></span>
+          <h2 class="section-title">Orientation (Compass + Gyro)</h2>
+          <button id="btn-motion" class="btn-link">Enable</button>
+        </div>
+
+        <div class="viz-row">
+          <!-- Compass rose: needle points where the phone's top edge is aimed -->
+          <div class="viz">
+            <svg viewBox="0 0 140 140" class="viz-svg" aria-label="Compass heading">
+              <circle cx="70" cy="70" r="62" class="viz-ring" />
+              <g class="ticks">
+                <line x1="70" y1="10" x2="70" y2="22" />
+                <line x1="70" y1="118" x2="70" y2="130" />
+                <line x1="10" y1="70" x2="22" y2="70" />
+                <line x1="118" y1="70" x2="130" y2="70" />
+              </g>
+              <text x="70" y="34" class="card-n">N</text>
+              <text x="70" y="116" class="card-lbl">S</text>
+              <text x="122" y="75" class="card-lbl">E</text>
+              <text x="18" y="75" class="card-lbl">W</text>
+              <g id="compass-needle">
+                <polygon points="70,24 79,70 70,58 61,70" class="needle-n" />
+                <polygon points="70,116 79,70 70,82 61,70" class="needle-s" />
+              </g>
+              <circle cx="70" cy="70" r="4" class="viz-hub" />
+            </svg>
+            <div class="viz-cap">Heading <span id="heading-val">—</span></div>
+          </div>
+
+          <!-- Attitude indicator: horizon banks with roll, shifts with pitch -->
+          <div class="viz">
+            <svg viewBox="0 0 140 140" class="viz-svg" aria-label="Tilt pitch and roll">
+              <defs>
+                <clipPath id="att-clip"><circle cx="70" cy="70" r="62" /></clipPath>
+              </defs>
+              <g clip-path="url(#att-clip)">
+                <g id="attitude-horizon">
+                  <rect x="-110" y="-110" width="360" height="180" class="sky" />
+                  <rect x="-110" y="70" width="360" height="180" class="ground" />
+                  <line x1="-110" y1="70" x2="250" y2="70" class="horizon" />
+                  <line x1="50" y1="48" x2="90" y2="48" class="ladder" />
+                  <line x1="56" y1="92" x2="84" y2="92" class="ladder" />
+                </g>
+              </g>
+              <circle cx="70" cy="70" r="62" class="viz-ring" />
+              <g class="att-fixed">
+                <line x1="44" y1="70" x2="62" y2="70" />
+                <line x1="78" y1="70" x2="96" y2="70" />
+                <circle cx="70" cy="70" r="3" />
+              </g>
+            </svg>
+            <div class="viz-cap">
+              Pitch <span id="pitch-val">—</span> · Roll <span id="roll-val">—</span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The horizon <strong>banks with roll</strong> (left / right tilt) and
+          <strong>shifts with pitch</strong> (forward / back tilt). The needle shows
+          where the phone's top edge points.
+        </p>
       </section>
 
       <section class="card">

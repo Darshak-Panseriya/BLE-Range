@@ -221,3 +221,217 @@ input[type="checkbox"] {
   text-align: center;
   padding: 4px 8px 0;
 }
+
+/* ---- Sections ---- */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #04101f;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex: none;
+}
+
+.icon-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.icon-dot.gps {
+  background: var(--green);
+}
+
+.icon-dot.gyro {
+  background: var(--amber);
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-card-2);
+  color: var(--muted);
+}
+
+.badge-connected {
+  background: rgba(54, 211, 153, 0.18);
+  color: var(--green);
+}
+
+.badge-connecting {
+  background: rgba(251, 189, 35, 0.18);
+  color: var(--amber);
+}
+
+.badge-disconnected {
+  background: rgba(248, 114, 114, 0.16);
+  color: var(--red);
+}
+
+.stat-pair {
+  display: flex;
+  gap: var(--gap);
+  margin-top: 12px;
+}
+
+.stat-pair > div {
+  flex: 1;
+}
+
+.status-grid .stat {
+  background: var(--bg-card-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.note {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.note-warn {
+  color: #ffe7a8;
+}
+
+.btn-link {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-link:disabled {
+  color: var(--green);
+  border-color: rgba(54, 211, 153, 0.4);
+  opacity: 1;
+}
+
+/* ---- Orientation visuals ---- */
+.viz-row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.viz {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.viz-svg {
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+}
+
+.viz-cap {
+  font-size: 0.78rem;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.viz-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 2;
+}
+
+.viz-hub {
+  fill: var(--text);
+}
+
+.ticks line {
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 2;
+}
+
+.card-n {
+  fill: var(--red);
+  font-size: 14px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.card-lbl {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.needle-n {
+  fill: var(--red);
+}
+
+.needle-s {
+  fill: var(--bg-card-2);
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1;
+}
+
+#compass-needle,
+#attitude-horizon {
+  transition: transform 0.12s linear;
+}
+
+.sky {
+  fill: #2b6cb0;
+}
+
+.ground {
+  fill: #7a5230;
+}
+
+.horizon {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.ladder {
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.5;
+}
+
+.att-fixed line {
+  stroke: var(--amber);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.att-fixed circle {
+  fill: var(--amber);
+}
