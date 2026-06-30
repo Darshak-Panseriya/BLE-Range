@@ -52,6 +52,29 @@ export class BluetoothManager {
     return this.deviceName;
   }
 
+  // Auto-reconnect to a previously-granted device without showing the chooser.
+  // Web Bluetooth cannot grab arbitrary system-connected devices for privacy
+  // reasons, but getDevices() returns ones the user already picked once, so a
+  // second visit can reconnect hands-free. Returns true if a connect was tried.
+  async tryKnownDevice() {
+    if (!this.available || typeof navigator.bluetooth.getDevices !== 'function') {
+      return false;
+    }
+    try {
+      const devices = await navigator.bluetooth.getDevices();
+      if (!devices || devices.length === 0) return false;
+      this._device = devices[0];
+      this.deviceName = this._device.name || this._device.id || 'Known device';
+      this._device.addEventListener('gattserverdisconnected', () =>
+        this._handleDisconnect()
+      );
+      await this.connect();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Wraps gatt.connect() with a timeout so it never hangs indefinitely.
   _connectWithTimeout(timeoutMs = 12000) {
     const connectPromise = this._device.gatt.connect();

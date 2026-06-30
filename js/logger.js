@@ -20,7 +20,9 @@ const CSV_HEADER = [
   'compass_accuracy_deg',
   'orientation_alpha_deg',
   'orientation_beta_deg',
-  'orientation_gamma_deg'
+  'orientation_gamma_deg',
+  'ref_relative_angle_deg',
+  'ref_distance_m'
 ];
 
 export class SessionLogger {
@@ -46,10 +48,11 @@ export class SessionLogger {
     this.running = false;
   }
 
-  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource, compass: {heading,...} }
-  add({ eventType, bleState, rssi, geo, gpsSource, compass }) {
+  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource, compass: {heading,...}, reference: {relAngle, distance} }
+  add({ eventType, bleState, rssi, geo, gpsSource, compass, reference }) {
     const g = geo || {};
     const c = compass || {};
+    const r = reference || {};
     const blank = (v) => (v === '' || v === null || v === undefined ? '' : v);
     this._rows.push({
       timestamp_iso: new Date().toISOString(),
@@ -67,7 +70,9 @@ export class SessionLogger {
       compass_accuracy_deg: blank(c.accuracy),
       orientation_alpha_deg: blank(c.alpha),
       orientation_beta_deg: blank(c.beta),
-      orientation_gamma_deg: blank(c.gamma)
+      orientation_gamma_deg: blank(c.gamma),
+      ref_relative_angle_deg: blank(r.relAngle),
+      ref_distance_m: blank(r.distance)
     });
   }
 

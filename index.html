@@ -41,7 +41,7 @@
             <div id="device-name" class="value">— none selected —</div>
           </div>
           <button id="btn-select" class="btn btn-secondary">
-            Select &amp; Connect
+            Connect
           </button>
         </div>
         <div class="stat-pair">
@@ -55,9 +55,11 @@
           </div>
         </div>
         <p id="ble-note" class="note">
-          Connect a <strong>BLE peripheral</strong> (sensor, beacon, tag, ESP32 /
-          nRF, fitness strap). <strong>Headphones and speakers will not work</strong>
-          — they use Classic Bluetooth audio, which Web Bluetooth cannot track.
+          Tap <strong>Connect</strong> once and pick your <strong>BLE peripheral</strong>
+          (sensor, beacon, tag, ESP32 / nRF). After the first pick the app
+          auto-reconnects to it next time. <strong>Headphones and speakers will not
+          work</strong> — they use Classic Bluetooth audio, which Web Bluetooth cannot
+          see (the browser also can't grab system-paired devices automatically).
         </p>
       </section>
 
@@ -199,6 +201,51 @@
           The horizon <strong>banks with roll</strong> (left / right tilt) and
           <strong>shifts with pitch</strong> (forward / back tilt). The needle shows
           where the phone's top edge points.
+        </p>
+      </section>
+
+      <!-- Reference Angle -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="icon-dot ref"></span>
+          <h2 class="section-title">Reference Angle</h2>
+          <span id="ref-badge" class="badge">set center</span>
+        </div>
+        <div class="button-row">
+          <button id="btn-set-center" class="btn btn-secondary">Set Center (here)</button>
+          <button id="btn-set-ref" class="btn btn-secondary">Set 0° Line (here)</button>
+          <button id="btn-ref-reset" class="btn btn-secondary">Reset</button>
+        </div>
+        <div class="viz-row">
+          <div class="viz">
+            <svg viewBox="0 0 160 160" class="viz-svg" aria-label="Angle relative to reference line">
+              <circle cx="80" cy="80" r="70" class="viz-ring" />
+              <path id="ref-zone" class="ref-zone" />
+              <line x1="80" y1="80" x2="80" y2="12" class="ref-line" />
+              <text x="80" y="26" class="card-lbl">0°</text>
+              <text x="148" y="84" class="card-lbl">+90</text>
+              <text x="12" y="84" class="card-lbl">-90</text>
+              <text x="80" y="152" class="card-lbl">180</text>
+              <g id="ref-needle">
+                <line x1="80" y1="80" x2="80" y2="18" class="ref-needle-line" />
+                <circle cx="80" cy="18" r="5" class="ref-needle-dot" />
+              </g>
+              <circle cx="80" cy="80" r="4" class="viz-hub" />
+            </svg>
+            <div class="viz-cap">
+              Angle <span id="ref-angle-val">—</span> · Dist <span id="ref-dist-val">—</span>
+            </div>
+          </div>
+        </div>
+        <label class="control" for="ref-tolerance">
+          <span class="label">On-track tolerance (±°)</span>
+          <input id="ref-tolerance" type="number" min="1" max="90" step="1" value="5" inputmode="numeric" />
+        </label>
+        <p class="note">
+          Stand at the center and tap <strong>Set Center</strong>. Walk out along your
+          desired 0° direction and tap <strong>Set 0° Line</strong>. The needle then
+          shows your angle off that line — keep it in the green zone to stay on bearing.
+          Needs a GPS fix; accuracy improves a few meters out from the center.
         </p>
       </section>
 

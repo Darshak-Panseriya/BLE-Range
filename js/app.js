@@ -8,11 +8,13 @@ import { GeolocationManager } from './geo.js';
 import { BluetoothManager } from './ble.js';
 import { SessionLogger } from './logger.js';
 import { CompassManager } from './compass.js';
+import { ReferenceManager } from './reference.js';
 
 const geo = new GeolocationManager();
 const ble = new BluetoothManager();
 const logger = new SessionLogger();
 const compass = new CompassManager();
+const ref = new ReferenceManager();
 
 let snapshotTimer = null;
 let wakeLock = null;
@@ -59,13 +61,7 @@ function refreshStatus() {
   $('acc').textContent = g.accuracy === '' ? '—' : `${fmt(g.accuracy, 1)} m`;
   $('alt').textContent = g.altitude === '' ? '—' : `${fmt(g.altitude, 1)} m`;
   $('speed').textContent = g.speed === '' ? '—' : `${fmt(g.speed, 1)} m/s`;
-  const h = compass.latest();
-  $('heading').textContent =
-    h.heading === '' ? '—' : `${fmt(h.heading, 0)}° ${CompassManager.cardinal(h.heading)}`;
-  $('tilt').textContent =
-    h.beta === '' && h.gamma === ''
-      ? '—'
-      : `p ${fmt(h.beta, 0)}° / r ${fmt(h.gamma, 0)}°`;
+  renderReference();
   $('row-count').textContent = String(logger.rowCount);
   updateButtons();
 }
@@ -91,6 +87,60 @@ function renderOrientation(o) {
   }
 }
 
+function getTolerance() {
+  const v = parseFloat($('ref-tolerance').value);
+  return isFinite(v) && v >= 1 ? v : 5;
+}
+
+// Draw the green "on-track" wedge (±tolerance around the 0° line, pointing up).
+function updateZone() {
+  const tol = getTolerance();
+  const r = 68;
+  const cx = 80;
+  const cy = 80;
+  const a1 = (-tol * Math.PI) / 180;
+  const a2 = (tol * Math.PI) / 180;
+  const x1 = cx + r * Math.sin(a1);
+  const y1 = cy - r * Math.cos(a1);
+  const x2 = cx + r * Math.sin(a2);
+  const y2 = cy - r * Math.cos(a2);
+  const largeArc = tol > 180 ? 1 : 0;
+  $('ref-zone').setAttribute(
+    'd',
+    `M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`
+  );
+}
+
+// Update the reference circular map and numeric angle/distance.
+function renderReference() {
+  const badge = $('ref-badge');
+  if (!ref.center) {
+    badge.textContent = 'set center';
+    badge.className = 'badge';
+  } else if (!ref.ready) {
+    badge.textContent = 'set 0° line';
+    badge.className = 'badge badge-connecting';
+  } else {
+    badge.textContent = 'ready';
+    badge.className = 'badge badge-connected';
+  }
+  const data = ref.compute(geo.latest());
+  if (!data) {
+    $('ref-angle-val').textContent = '—';
+    $('ref-dist-val').textContent = '—';
+    return;
+  }
+  const tol = getTolerance();
+  const onTrack = Math.abs(data.relAngle) <= tol;
+  const needle = $('ref-needle');
+  needle.setAttribute('transform', `rotate(${data.relAngle.toFixed(1)} 80 80)`);
+  needle.classList.toggle('on-track', onTrack);
+  needle.classList.toggle('off-track', !onTrack);
+  const sign = data.relAngle > 0 ? '+' : '';
+  $('ref-angle-val').textContent = `${sign}${fmt(data.relAngle, 0)}°`;
+  $('ref-dist-val').textContent = `${fmt(data.distance, 1)} m`;
+}
+
 function appendPreview() {
   const last = logger.rows.slice(-8).reverse();
   const lines = last.map((r) => {
@@ -109,7 +159,8 @@ function logRow(eventType) {
     rssi: ble.rssi,
     geo: geo.latest(),
     gpsSource,
-    compass: compass.latest()
+    compass: compass.latest(),
+    reference: ref.compute(geo.latest())
   });
   refreshStatus();
   appendPreview();
@@ -232,6 +283,26 @@ $('btn-motion').addEventListener('click', ensureMotion);
 $('btn-start').addEventListener('click', startSession);
 $('btn-stop').addEventListener('click', stopSession);
 $('btn-export').addEventListener('click', () => logger.export());
+$('btn-set-center').addEventListener('click', () => {
+  if (ref.setCenter(geo.latest())) renderReference();
+  else showBanner('No GPS fix yet — wait for a location, then set the center.', 'warn');
+});
+$('btn-set-ref').addEventListener('click', () => {
+  if (!ref.center) {
+    showBanner('Set the center first, then walk out and set the 0° line.', 'warn');
+    return;
+  }
+  if (ref.setReference(geo.latest())) renderReference();
+  else showBanner('No GPS fix yet — wait for a location, then set the 0° line.', 'warn');
+});
+$('btn-ref-reset').addEventListener('click', () => {
+  ref.reset();
+  renderReference();
+});
+$('ref-tolerance').addEventListener('input', () => {
+  updateZone();
+  renderReference();
+});
 $('toggle-gps-source').addEventListener('change', (e) => {
   gpsSource = e.target.checked ? 'external' : 'internal';
   $('gps-source-label').textContent = gpsSource;
@@ -269,3 +340,10 @@ if ('serviceWorker' in navigator) {
 refreshStatus();
 appendPreview();
 initCompat();
+updateZone();
+
+// Pick-once: if the user already granted a BLE device on a previous visit,
+// reconnect to it automatically without showing the chooser again.
+ble.tryKnownDevice().then((tried) => {
+  if (tried) refreshStatus();
+});

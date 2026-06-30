@@ -266,6 +266,10 @@ input[type="checkbox"] {
   background: var(--amber);
 }
 
+.icon-dot.ref {
+  background: var(--accent);
+}
+
 .badge {
   font-size: 0.72rem;
   font-weight: 700;
@@ -433,5 +437,47 @@ input[type="checkbox"] {
 }
 
 .att-fixed circle {
+  fill: var(--amber);
+}
+
+/* ---- Reference angle ---- */
+.ref-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.ref-zone {
+  fill: rgba(54, 211, 153, 0.16);
+  stroke: none;
+}
+
+#ref-needle {
+  transition: transform 0.15s ease-out;
+}
+
+.ref-needle-line {
+  stroke: var(--red);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.ref-needle-dot {
+  fill: var(--red);
+}
+
+#ref-needle.on-track .ref-needle-line {
+  stroke: var(--green);
+}
+
+#ref-needle.on-track .ref-needle-dot {
+  fill: var(--green);
+}
+
+#ref-needle.off-track .ref-needle-line {
+  stroke: var(--amber);
+}
+
+#ref-needle.off-track .ref-needle-dot {
   fill: var(--amber);
 }
