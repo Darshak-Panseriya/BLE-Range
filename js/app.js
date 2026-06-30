@@ -7,10 +7,12 @@
 import { GeolocationManager } from './geo.js';
 import { BluetoothManager } from './ble.js';
 import { SessionLogger } from './logger.js';
+import { CompassManager } from './compass.js';
 
 const geo = new GeolocationManager();
 const ble = new BluetoothManager();
 const logger = new SessionLogger();
+const compass = new CompassManager();
 
 let snapshotTimer = null;
 let wakeLock = null;
@@ -50,6 +52,13 @@ function refreshStatus() {
   $('acc').textContent = g.accuracy === '' ? '—' : `${fmt(g.accuracy, 1)} m`;
   $('alt').textContent = g.altitude === '' ? '—' : `${fmt(g.altitude, 1)} m`;
   $('speed').textContent = g.speed === '' ? '—' : `${fmt(g.speed, 1)} m/s`;
+  const h = compass.latest();
+  $('heading').textContent =
+    h.heading === '' ? '—' : `${fmt(h.heading, 0)}° ${CompassManager.cardinal(h.heading)}`;
+  $('tilt').textContent =
+    h.beta === '' && h.gamma === ''
+      ? '—'
+      : `p ${fmt(h.beta, 0)}° / r ${fmt(h.gamma, 0)}°`;
   $('row-count').textContent = String(logger.rowCount);
   updateButtons();
 }
@@ -71,7 +80,8 @@ function logRow(eventType) {
     bleState: ble.state,
     rssi: ble.rssi,
     geo: geo.latest(),
-    gpsSource
+    gpsSource,
+    compass: compass.latest()
   });
   refreshStatus();
   appendPreview();
@@ -115,6 +125,13 @@ async function startSession() {
     onError: (e) =>
       showBanner('GPS error: ' + (e && e.message ? e.message : e), 'warn')
   });
+  // Request compass permission (iOS requires user gesture context).
+  try {
+    await compass.requestPermission();
+  } catch {
+    // non-fatal
+  }
+  compass.start();
   logRow('session_start');
   snapshotTimer = setInterval(() => {
     if (sessionActive) logRow('snapshot');
@@ -132,6 +149,7 @@ async function stopSession() {
     snapshotTimer = null;
   }
   geo.stop();
+  compass.stop();
   logger.stop();
   await releaseWakeLock();
   updateButtons();

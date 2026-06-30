@@ -15,7 +15,12 @@ const CSV_HEADER = [
   'altitude_m',
   'vertical_accuracy_m',
   'speed_mps',
-  'gps_source'
+  'gps_source',
+  'compass_heading_deg',
+  'compass_accuracy_deg',
+  'orientation_alpha_deg',
+  'orientation_beta_deg',
+  'orientation_gamma_deg'
 ];
 
 export class SessionLogger {
@@ -41,9 +46,10 @@ export class SessionLogger {
     this.running = false;
   }
 
-  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource }
-  add({ eventType, bleState, rssi, geo, gpsSource }) {
+  // { eventType, bleState, rssi, geo: {latitude,...}, gpsSource, compass: {heading, accuracy} }
+  add({ eventType, bleState, rssi, geo, gpsSource, compass }) {
     const g = geo || {};
+    const c = compass || {};
     this._rows.push({
       timestamp_iso: new Date().toISOString(),
       event_type: eventType,
@@ -55,7 +61,12 @@ export class SessionLogger {
       altitude_m: g.altitude ?? '',
       vertical_accuracy_m: g.altitudeAccuracy ?? '',
       speed_mps: g.speed ?? '',
-      gps_source: gpsSource ?? 'internal'
+      gps_source: gpsSource ?? 'internal',
+      compass_heading_deg: c.heading === '' || c.heading === null || c.heading === undefined ? '' : c.heading,
+      compass_accuracy_deg: c.accuracy === '' || c.accuracy === null || c.accuracy === undefined ? '' : c.accuracy,
+      orientation_alpha_deg: c.alpha === '' || c.alpha === null || c.alpha === undefined ? '' : c.alpha,
+      orientation_beta_deg: c.beta === '' || c.beta === null || c.beta === undefined ? '' : c.beta,
+      orientation_gamma_deg: c.gamma === '' || c.gamma === null || c.gamma === undefined ? '' : c.gamma
     });
   }
 
